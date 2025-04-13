@@ -1,0 +1,7 @@
+PyQt5==5.15.9
+reportlab==4.0.4
+pypiwin32==223
+python-dateutil==2.8.2
+secure-smtplib==0.1.1
+pyOpenSSL==23.3.0
+PyQtChart==5.15.7
