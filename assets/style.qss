@@ -1,0 +1,117 @@
+QMainWindow { 
+    background-color: #1A2526; 
+    color: #D3D7D9; 
+}
+QPushButton {
+    background-color: #0969DA;
+    color: #FFFFFF;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    min-width: 120px;
+}
+QPushButton:hover { 
+    background-color: #0A7BFF; 
+}
+QPushButton:disabled { 
+    background-color: #4A5A5B; 
+    color: #A0A5A6; 
+}
+QLabel { 
+    color: #D3D7D9; 
+    font-size: 14px; 
+    font-family: 'Segoe UI', Arial, sans-serif; 
+}
+QTableWidget {
+    background-color: #2A3536;
+    color: #D3D7D9;
+    border: 1px solid #3A4546;
+    gridline-color: #3A4546;
+    border-radius: 4px;
+}
+QTableWidget::item { 
+    padding: 8px; 
+}
+QHeaderView::section {
+    background-color: #0969DA;
+    color: #FFFFFF;
+    padding: 6px;
+    border: none;
+    font-weight: bold;
+}
+QListWidget {
+    background-color: #2A3536;
+    color: #D3D7D9;
+    border: 1px solid #3A4546;
+    border-radius: 4px;
+    padding: 5px;
+}
+QListWidget::item {
+    padding: 5px;
+    border-bottom: 1px solid #3A4546;
+}
+QCalendarWidget { 
+    background-color: #2A3536; 
+    color: #D3D7D9; 
+    border: 1px solid #3A4546; 
+    border-radius: 8px; 
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+QCalendarWidget QToolButton {
+    color: #D3D7D9; 
+    background-color: #0969DA; 
+    border: none; 
+    padding: 8px; 
+    border-radius: 4px; 
+    margin: 5px;
+}
+QCalendarWidget QToolButton:hover {
+    background-color: #0A7BFF; 
+}
+QCalendarWidget QMenu {
+    background-color: #2A3536; 
+    color: #D3D7D9; 
+    border: 1px solid #3A4546; 
+}
+QCalendarWidget QMenu::item:selected {
+    background-color: #0969DA; 
+}
+QCalendarWidget QWidget#qt_calendar_navigationbar { 
+    background-color: #1A2526; 
+    padding: 5px;
+}
+QCalendarWidget QAbstractItemView { 
+    background-color: #2A3536; 
+    color: #D3D7D9; 
+    selection-background-color: #2DA44E; 
+    selection-color: #FFFFFF; 
+    border: none;
+    outline: none;
+}
+QCalendarWidget QAbstractItemView:disabled { 
+    color: #A0A5A6; 
+}
+QCalendarWidget QWidget { 
+    background-color: #2A3536; 
+    color: #D3D7D9; 
+    alternate-background-color: #2A3536; 
+}
+QCalendarWidget QTableView::item { 
+    background-color: #2A3536; 
+    border: 1px solid #3A4546; 
+    padding: 5px; 
+}
+QCalendarWidget QTableView::item:hover { 
+    background-color: #0969DA; 
+}
+QCalendarWidget QTableView::item:selected { 
+    background-color: #2DA44E; 
+    color: #FFFFFF; 
+}
+QStatusBar { 
+    background-color: #0969DA; 
+    color: #FFFFFF; 
+    font-weight: bold; 
+}

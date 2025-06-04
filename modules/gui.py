@@ -1,8 +1,9 @@
 import os
+import time
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QCalendarWidget,
     QTableWidget, QTableWidgetItem, QPushButton, QListWidget, QDialog,
-    QDialogButtonBox, QLabel, QLineEdit, QMessageBox, QFileDialog, QStatusBar
+    QDialogButtonBox, QLabel, QLineEdit, QMessageBox, QFileDialog, QStatusBar, QListWidgetItem
 )
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QIcon, QColor
@@ -68,152 +69,25 @@ class MainWindow(QMainWindow):
         self.total_times = {}  # app: seconds
         self.total_elapsed_time = 0  # Total time since tracking started
         self.session_start_time = None
+        self.active_apps = {}  # app: start_time
+        self.app_durations = {}  # app: total duration
         self.init_ui()
         self.init_timers()
         self.setup_connections()
-        
-        # Initialize tracker with default settings
-        self.tracker.set_tracked_apps()  # Track all apps by default
-        self.tracker.start()  # Start the tracker thread (but not tracking yet)
+        self.tracker.set_tracked_apps()
+        self.tracker.start()
 
     def init_ui(self):
         self.setWindowTitle("Productivity Tracker Pro")
         self.setGeometry(100, 100, 1200, 800)
         self.setWindowIcon(QIcon("icons/app_icon.png"))
-        self.setStyleSheet("""
-            QMainWindow { background-color: #1E1E1E; color: #E0E0E0; }
-            QPushButton {
-                background-color: #0288D1; color: #FFFFFF;
-                border: none; padding: 8px; border-radius: 4px;
-                font-size: 14px; min-width: 120px;
-            }
-            QPushButton:hover { background-color: #03A9F4; }
-            QPushButton:disabled { background-color: #455A64; color: #B0BEC5; }
-            QLabel { color: #E0E0E0; font-size: 14px; }
-            QTableWidget {
-                background-color: #2A2A2A; color: #E0E0E0;
-                border: 1px solid #424242; gridline-color: #424242;
-            }
-            QTableWidget::item { padding: 5px; }
-            QHeaderView::section {
-                background-color: #0288D1; color: #FFFFFF;
-                padding: 5px; border: none;
-            }
-            QListWidget {
-                background-color: #2A2A2A; color: #E0E0E0;
-                border: 1px solid #424242; border-radius: 4px;
-            }
-            QCalendarWidget { background-color: #2A2A2A; color: #E0E0E0; }
-            QCalendarWidget QToolButton {
-                color: #E0E0E0; background-color: #2A2A2A;
-            }
-            QCalendarWidget QWidget { alternate-background-color: #2A2A2A; }
-            QStatusBar { background-color: #0288D1; color: #FFFFFF; }
-        """)
 
-        main_widget = QWidget()
-        main_layout = QHBoxLayout()
-
-        # Left Panel
-        left_panel = QVBoxLayout()
-        
-        # Create control layout first
-        control_layout = QHBoxLayout()
-        self.start_btn = QPushButton("Start Tracking")
-        self.stop_btn = QPushButton("Stop Tracking")
-        self.stop_btn.setEnabled(False)
-        control_layout.addWidget(self.start_btn)
-        control_layout.addWidget(self.stop_btn)
-
-        # Create and configure labels
-        self.current_app_label = QLabel("Currently Tracking: Code Editors, Browsers & Design Apps")
-        self.current_app_label.setStyleSheet("font-size: 18px; color: #4CAF50;")
-        
-        self.total_time_label = QLabel("Total Session Time: 00:00:00")
-        self.total_time_label.setStyleSheet("font-size: 14px; color: #BBDEFB; font-weight: bold;")
-        
-        self.tracked_time_label = QLabel("Tracked Application Time: 00:00:00")
-        self.tracked_time_label.setStyleSheet("font-size: 14px; color: #81C784; font-weight: bold;")
-
-        # Add widgets to left panel in correct order
-        left_panel.addWidget(self.current_app_label)
-        left_panel.addWidget(self.total_time_label)
-        left_panel.addWidget(self.tracked_time_label)
-        left_panel.addLayout(control_layout)
-        
-        self.live_tracking_list = QListWidget()
-        self.live_tracking_list.setMinimumWidth(300)
-        left_panel.addWidget(QLabel("Live Tracking:"))
-        left_panel.addWidget(self.live_tracking_list)
-
-        # Right Panel
-        right_panel = QVBoxLayout()
-        self.calendar = QCalendarWidget()
-        self.chart_view = ChartView()
-        
-        self.summary_table = QTableWidget(0, 2)
-        self.summary_table.setHorizontalHeaderLabels(["Application", "Time Spent"])
-        self.summary_table.setStyleSheet("selection-background-color: #0288D1;")
-        self.summary_table.verticalHeader().hide()
-        self.summary_table.setColumnWidth(0, 250)
-        self.summary_table.setColumnWidth(1, 150)
-
-        export_layout = QHBoxLayout()
-        self.export_btn = QPushButton("Export Report")
-        self.email_btn = QPushButton("Email Report")
-        export_layout.addWidget(self.export_btn)
-        export_layout.addWidget(self.email_btn)
-
-        right_panel.addWidget(QLabel("Select Date:"))
-        right_panel.addWidget(self.calendar)
-        right_panel.addWidget(QLabel("Usage Distribution:"))
-        right_panel.addWidget(self.chart_view)
-        right_panel.addWidget(QLabel("Summary:"))
-        right_panel.addWidget(self.summary_table)
-        right_panel.addLayout(export_layout)
-
-        # Combine panels
-        main_layout.addLayout(left_panel, 1)
-        main_layout.addLayout(right_panel, 2)
-        main_widget.setLayout(main_layout)
-        self.setCentralWidget(main_widget)
-
-        self.status_bar = QStatusBar()
-        self.setStatusBar(self.status_bar)
-        self.status_bar.showMessage("Ready")
-        self.setWindowTitle("Productivity Tracker Pro")
-        self.setGeometry(100, 100, 1200, 800)
-        self.setWindowIcon(QIcon("icons/app_icon.png"))
-        self.setStyleSheet("""
-            QMainWindow { background-color: #1E1E1E; color: #E0E0E0; }
-            QPushButton {
-                background-color: #0288D1; color: #FFFFFF;
-                border: none; padding: 8px; border-radius: 4px;
-                font-size: 14px; min-width: 120px;
-            }
-            QPushButton:hover { background-color: #03A9F4; }
-            QPushButton:disabled { background-color: #455A64; color: #B0BEC5; }
-            QLabel { color: #E0E0E0; font-size: 14px; }
-            QTableWidget {
-                background-color: #2A2A2A; color: #E0E0E0;
-                border: 1px solid #424242; gridline-color: #424242;
-            }
-            QTableWidget::item { padding: 5px; }
-            QHeaderView::section {
-                background-color: #0288D1; color: #FFFFFF;
-                padding: 5px; border: none;
-            }
-            QListWidget {
-                background-color: #2A2A2A; color: #E0E0E0;
-                border: 1px solid #424242; border-radius: 4px;
-            }
-            QCalendarWidget { background-color: #2A2A2A; color: #E0E0E0; }
-            QCalendarWidget QToolButton {
-                color: #E0E0E0; background-color: #2A2A2A;
-            }
-            QCalendarWidget QWidget { alternate-background-color: #2A2A2A; }
-            QStatusBar { background-color: #0288D1; color: #FFFFFF; }
-        """)
+        # Load stylesheet from file
+        try:
+            with open("assets/style.qss", "r") as f:
+                self.setStyleSheet(f.read())
+        except Exception as e:
+            print(f"Error loading stylesheet: {e}")
 
         main_widget = QWidget()
         main_layout = QHBoxLayout()
@@ -221,23 +95,14 @@ class MainWindow(QMainWindow):
         # Left Panel
         left_panel = QVBoxLayout()
         self.current_app_label = QLabel("Currently Tracking: All Applications")
-        self.current_app_label.setStyleSheet("font-size: 18px; color: #4CAF50;")
-        self.time_spent_label = QLabel("Time Spent: 00:00:00")
-        self.time_spent_label.setStyleSheet("font-size: 16px; color: #BBDEFB;")
-          # Add these new labels with different styling
+        self.current_app_label.setStyleSheet("font-size: 18px; color: #2DA44E; font-weight: bold; margin-bottom: 10px;")
+        
         self.total_time_label = QLabel("Total Session Time: 00:00:00")
-        self.total_time_label.setStyleSheet("font-size: 14px; color: #BBDEFB; font-weight: bold;")
+        self.total_time_label.setStyleSheet("font-size: 14px; color: #D3D7D9; font-weight: bold; margin-bottom: 5px;")
         
         self.tracked_time_label = QLabel("Tracked Application Time: 00:00:00")
-        self.tracked_time_label.setStyleSheet("font-size: 14px; color: #81C784; font-weight: bold;")
-    
+        self.tracked_time_label.setStyleSheet("font-size: 14px; color: #2DA44E; font-weight: bold; margin-bottom: 15px;")
 
-            # Add them to your layout before the control buttons
-        left_panel.addWidget(self.current_app_label)
-        left_panel.addWidget(self.total_time_label)
-        left_panel.addWidget(self.tracked_time_label)
-        left_panel.addLayout(control_layout)
-        
         control_layout = QHBoxLayout()
         self.start_btn = QPushButton("Start Tracking")
         self.stop_btn = QPushButton("Stop Tracking")
@@ -248,7 +113,8 @@ class MainWindow(QMainWindow):
         self.live_tracking_list = QListWidget()
         self.live_tracking_list.setMinimumWidth(300)
         left_panel.addWidget(self.current_app_label)
-        left_panel.addWidget(self.time_spent_label)
+        left_panel.addWidget(self.total_time_label)
+        left_panel.addWidget(self.tracked_time_label)
         left_panel.addLayout(control_layout)
         left_panel.addWidget(QLabel("Live Tracking:"))
         left_panel.addWidget(self.live_tracking_list)
@@ -257,9 +123,10 @@ class MainWindow(QMainWindow):
         right_panel = QVBoxLayout()
         self.calendar = QCalendarWidget()
         self.chart_view = ChartView()
+        self.chart_view.setMinimumHeight(300)  # Ensure enough space for the chart
         self.summary_table = QTableWidget(0, 2)
         self.summary_table.setHorizontalHeaderLabels(["Application", "Time Spent"])
-        self.summary_table.setStyleSheet("selection-background-color: #0288D1;")
+        self.summary_table.setStyleSheet("selection-background-color: #0969DA;")
         self.summary_table.verticalHeader().hide()
         self.summary_table.setColumnWidth(0, 250)
         self.summary_table.setColumnWidth(1, 150)
@@ -288,82 +155,51 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage("Ready")
 
     def setup_connections(self):
-        """Connect all signals and slots"""
-        # Connect tracker signals
-        self.tracker.activity_changed.connect(self.on_activity_changed)
-        self.tracker.tracking_update.connect(self.update_tracking_status)
-        self.tracker.apps_updated.connect(self.on_apps_updated)
-        
-        # Connect UI buttons
         self.start_btn.clicked.connect(self.start_tracking)
         self.stop_btn.clicked.connect(self.stop_tracking)
         self.calendar.clicked.connect(self.update_report)
         self.export_btn.clicked.connect(self.export_report)
         self.email_btn.clicked.connect(self.show_email_dialog)
-
+        self.tracker.activity_changed.connect(self.on_activity_changed)
+        self.tracker.tracking_update.connect(self.update_tracking_status)
+        self.tracker.apps_updated.connect(self.on_apps_updated)
+        self.tracker.active_apps_updated.connect(self.on_active_apps_updated)
 
     def init_timers(self):
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_total_time)
 
-    def update_total_time(self):
-        """Update the total elapsed time counter"""
-        self.total_elapsed_time += 1
-        self.time_spent_label.setText(f"Time Spent: {self.format_time(self.total_elapsed_time)}")
-
-    def format_time(self, seconds):
-        """Convert seconds to HH:MM:SS format"""
-        try:
-            # Ensure we're working with a number
-            total_seconds = float(seconds)
-            # Round to nearest second
-            total_seconds = round(total_seconds)
-            hours = int(total_seconds // 3600)
-            minutes = int((total_seconds % 3600) // 60)
-            secs = int(total_seconds % 60)
-            return f"{hours:02d}:{minutes:02d}:{secs:02d}"
-        except (ValueError, TypeError):
-            return "00:00:00"
-
     def start_tracking(self):
-        """Start the tracking session"""
         dialog = PermissionDialog(self)
         if dialog.exec_() == QDialog.Accepted:
-            # Clear previous data
             self.live_tracking_list.clear()
             self.total_times.clear()
+            self.active_apps.clear()
+            self.app_durations.clear()
             self.total_elapsed_time = 0
             self.session_start_time = dt.now()
-            
-            # Start tracking
             self.tracker.toggle_tracking(True)
             self.start_btn.setEnabled(False)
             self.stop_btn.setEnabled(True)
             self.timer.start(1000)
-            
-            # Update UI
-            self.current_app_label.setText("Tracking: Development & Design Apps")
+            self.current_app_label.setText("Tracking: All Applications")
             self.status_bar.showMessage("Tracking started", 3000)
-            
-            # Log session start
             self.logger.log_activity(
                 dt.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "Session Started"
             )
-
+        else:
+            self.status_bar.showMessage("Permission Denied - Tracking Not Started", 3000)
+            print("Debug: Permission denied")
 
     def stop_tracking(self):
-        """Stop the tracking session"""
         self.tracker.toggle_tracking(False)
         self.start_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
         self.timer.stop()
-        
-        # Update UI
         self.current_app_label.setText("Tracking: Inactive")
+        self.live_tracking_list.clear()
         self.status_bar.showMessage("Tracking stopped", 3000)
-        
-        # Log session end
         self.logger.end_current_session()
         self.logger.log_activity(
             dt.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -371,117 +207,148 @@ class MainWindow(QMainWindow):
         )
 
     def on_activity_changed(self, timestamp, app_name, is_active):
-        """Update live tracking list when app activity changes"""
         try:
-            action = "▶" if is_active else "■"
-            color = QColor("#4CAF50") if is_active else QColor("#F44336")
-            
-            item = QListWidgetItem(f"{timestamp} - {app_name} {action}")
-            item.setForeground(color)
-            
-            # Set appropriate icon
-            icon = self._get_app_icon(app_name.lower())
-            if icon:
-                item.setIcon(icon)
-            
-            # Add to top of list
-            self.live_tracking_list.insertItem(0, item)
-            
-            # Limit to 20 items
-            if self.live_tracking_list.count() > 20:
-                self.live_tracking_list.takeItem(20)
-                
-            # Auto-scroll to top
-            self.live_tracking_list.scrollToTop()
-            
+            print(f"Debug: Activity changed - {timestamp}, {app_name}, is_active: {is_active}")
+            if is_active:
+                self.logger.log_activity(timestamp, app_name)
         except Exception as e:
-            print(f"Error updating activity list: {e}")
+            print(f"Error in on_activity_changed: {e}")
+
+    def on_active_apps_updated(self, app_start_times, app_durations):
+        try:
+            print(f"Debug: Active apps updated - Active: {app_start_times}, Durations: {app_durations}")
+            self.active_apps = app_start_times.copy()
+            self.app_durations = app_durations.copy()
+            self.update_live_tracking_list()
+            # Update chart with current session data
+            combined_usage = self.tracker.read_app_usage(dt.now().strftime("%Y-%m-%d")).copy()
+            for app, duration in self.app_durations.items():
+                combined_usage[app] = combined_usage.get(app, 0) + duration
+            self.total_times = combined_usage
+            self.chart_view.update_chart(self.total_times)
+        except Exception as e:
+            print(f"Error updating live tracking list: {e}")
+
+    def update_live_tracking_list(self):
+        self.live_tracking_list.clear()
+        if not self.active_apps:
+            self.live_tracking_list.addItem("No applications currently active")
+            return
+
+        current_time = time.time()
+        app_times = {}
+        for app, start_time in self.active_apps.items():
+            live_duration = current_time - start_time
+            total_duration = self.app_durations.get(app, 0)
+            app_times[app] = total_duration
+
+        # Sort apps by total duration (most used first)
+        sorted_apps = sorted(app_times.items(), key=lambda x: x[1], reverse=True)
+
+        for app, total_duration in sorted_apps:
+            start_time = self.active_apps[app]
+            live_duration = current_time - start_time
+            formatted_time = self.format_time(live_duration)
+            item = QListWidgetItem(f"{app}: {formatted_time}")
+            item.setIcon(self._get_app_icon(app.lower()))
+            item.setForeground(QColor("#2DA44E"))
+            self.live_tracking_list.addItem(item)
 
     def on_apps_updated(self, app_durations):
-        """Handle updated app duration data"""
         try:
-            # Create a copy with float values converted to integers
+            print(f"Debug: Apps updated - {app_durations}")
             self.total_times = {app: float(duration) for app, duration in app_durations.items()}
+            total_tracked = sum(self.total_times.values())
+            self.tracked_time_label.setText(f"Tracked Application Time: {self.format_time(total_tracked)}")
             self.update_summary_table()
-            
-            # Calculate total time
-            total_seconds = sum(self.total_times.values())
-            self.time_spent_label.setText(f"Total Time: {self.format_time(total_seconds)}")
+            if not self.total_times:
+                print("Debug: No apps detected for chart update")
+                self.chart_view.update_chart({})
         except Exception as e:
             print(f"Error updating apps: {e}")
+
+    def update_total_time(self):
+        self.total_elapsed_time += 1
+        self.total_time_label.setText(f"Total Session Time: {self.format_time(self.total_elapsed_time)}")
+        self.update_live_tracking_list()  # Update live tracking list every second
+        print(f"Debug: Total time updated - {self.total_elapsed_time} seconds")
+
+    def format_time(self, seconds):
+        try:
+            total_seconds = float(seconds)
+            total_seconds = round(total_seconds)
+            hours = int(total_seconds // 3600)
+            minutes = int((total_seconds % 3600) // 60)
+            secs = int(total_seconds % 60)
+            if hours > 0:
+                return f"{hours} hr {minutes} min"
+            elif minutes > 0:
+                return f"{minutes} min {secs} sec"
+            else:
+                return f"{secs} sec"
+        except (ValueError, TypeError):
+            return "0 sec"
 
     def update_summary_table(self):
         self.summary_table.setRowCount(0)
         if not self.total_times:
             return
-            
         total_tracked = sum(self.total_times.values())
-        
         for app, seconds in sorted(self.total_times.items(), key=lambda x: x[1], reverse=True):
             row = self.summary_table.rowCount()
             self.summary_table.insertRow(row)
-            
-            # Calculate percentage
             percentage = (seconds / total_tracked) * 100 if total_tracked > 0 else 0
-            
-            # Add app name
             app_item = QTableWidgetItem(app)
             app_item.setIcon(self._get_app_icon(app.lower()))
             self.summary_table.setItem(row, 0, app_item)
-            
-            # Add formatted time and percentage
             time_str = f"{self.format_time(seconds)} ({percentage:.1f}%)"
             time_item = QTableWidgetItem(time_str)
             time_item.setTextAlignment(Qt.AlignCenter)
             self.summary_table.setItem(row, 1, time_item)
-        
-        self.chart_view.update_chart(self.total_times)
 
     def _get_app_icon(self, app_name):
-        """Return appropriate icon for application"""
         icon_map = {
-            # Browsers
             'chrome': 'browser',
             'firefox': 'browser',
             'edge': 'browser',
             'safari': 'browser',
             'opera': 'browser',
             'brave': 'browser',
-            
-            # Code Editors
             'code': 'vscode',
             'vscode': 'vscode',
             'visual studio': 'vs',
             'sublime': 'sublime',
             'atom': 'atom',
-            
-            # IDEs
             'android studio': 'android',
             'pycharm': 'pycharm',
             'intellij': 'intellij',
-            
-            # Design Tools
             'photoshop': 'photoshop',
             'illustrator': 'illustrator',
             'figma': 'figma',
-            
-            # Dev Tools
             'docker': 'docker',
             'postman': 'postman'
         }
-        
         for key, icon in icon_map.items():
             if key in app_name.lower():
                 return QIcon(f"icons/{icon}.png")
         return QIcon("icons/default.png")
 
     def update_report(self):
-        """Load and display report for selected date"""
         selected_date = self.calendar.selectedDate().toPyDate()
+        date_str = selected_date.strftime("%Y-%m-%d")
         try:
-            sessions = self.logger.read_sessions(selected_date)
-            self.total_times = {session['app']: session['duration'] for session in sessions}
+            # Read stored usage data for the selected date
+            stored_usage = self.tracker.read_app_usage(date_str)
+            # Combine with in-memory data (if tracking is active)
+            current_usage = self.tracker.get_current_stats()['durations']
+            combined_usage = stored_usage.copy()
+            for app, duration in current_usage.items():
+                combined_usage[app] = combined_usage.get(app, 0) + duration
+
+            self.total_times = combined_usage
+            print(f"Debug: Updating chart with data for {date_str}: {self.total_times}")
             self.update_summary_table()
+            self.chart_view.update_chart(self.total_times)
             self.status_bar.showMessage(f"Showing report for {selected_date}", 3000)
         except Exception as e:
             self.status_bar.showMessage(f"Error loading report: {str(e)}", 5000)
@@ -524,14 +391,13 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Error", f"Failed to send email: {str(e)}")
 
     def update_tracking_status(self, is_tracking):
-        """Update UI elements based on tracking state"""
-        color = "#4CAF50" if is_tracking else "#F44336"
-        self.status_bar.setStyleSheet(f"background-color: #0288D1; color: {color};")
+        color = "#2DA44E" if is_tracking else "#F44336"
+        self.status_bar.setStyleSheet(f"background-color: #0969DA; color: {color};")
         self.status_bar.showMessage("Tracking Active" if is_tracking else "Tracking Inactive")
 
     def closeEvent(self, event):
-        """Clean up when window closes"""
         if self.tracker.tracking_enabled:
             self.stop_tracking()
-        self.tracker.stop()  # Stop the tracker thread
+        self.tracker.quit()
+        self.tracker.wait()
         event.accept()
